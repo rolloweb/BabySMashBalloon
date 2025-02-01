@@ -23,14 +23,24 @@
             position: absolute;
             width: 60px;
             height: 90px;
-            transition: transform 0.3s ease;
+            transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
             cursor: pointer;
             animation: float 3s ease-in-out infinite;
         }
 
         @keyframes float {
-            0%, 100% { transform: translateY(0px) scale(1) rotate(-2deg); }
-            50% { transform: translateY(-20px) scale(1.05) rotate(2deg); }
+            0%, 100% { transform: translateY(0px) rotate(-2deg); }
+            50% { transform: translateY(-20px) rotate(2deg); }
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .balloon.expanding {
+            animation: pulse 0.2s ease-in-out;
         }
 
         .confetti {
@@ -65,9 +75,7 @@
         let audioContext;
         let balloonCount = 0;
         const maxBalloons = 8;
-        let expandCount = 0;
 
-        // Updated Balloon SVG template with more balloon-like shape
         function createBalloonSVG(color) {
             return `
                 <svg viewBox="0 0 50 80" xmlns="http://www.w3.org/2000/svg">
@@ -105,7 +113,6 @@
             oscillator.connect(gainNode);
             gainNode.connect(audioContext.destination);
 
-            // Random cheerful note
             const notes = [523.25, 587.33, 659.25, 698.46, 783.99];
             oscillator.frequency.setValueAtTime(
                 notes[Math.floor(Math.random() * notes.length)], 
@@ -129,16 +136,15 @@
             
             balloon.style.left = Math.random() * (window.innerWidth - 60) + 'px';
             balloon.style.top = Math.random() * (window.innerHeight - 100) + 'px';
-            balloon.style.animationDelay = -Math.random() * 3 + 's';
             
             document.body.appendChild(balloon);
             balloonCount++;
             
             balloon.expandLevel = 1;
+            balloon.baseScale = 1;
             balloon.expanding = false;
         }
 
-        // Rest of the functions remain the same
         function createConfetti(x, y, color) {
             for (let i = 0; i < 20; i++) {
                 const confetti = document.createElement('div');
@@ -189,11 +195,20 @@
         }
 
         function expandBalloons() {
-            playKeySound(); // Play sound on each key press
+            playKeySound();
             document.querySelectorAll('.balloon').forEach(balloon => {
                 balloon.expandLevel = balloon.expandLevel || 1;
-                balloon.expandLevel += 0.1;
+                balloon.expandLevel += 0.15;  // Increased expansion amount
+                
+                // Apply scale transform with the current expansion level
                 balloon.style.transform = `scale(${balloon.expandLevel})`;
+                
+                // Add visual feedback
+                balloon.style.filter = `brightness(${1 + (balloon.expandLevel - 1) * 0.5})`;
+                
+                // Add pulse effect
+                balloon.classList.add('expanding');
+                setTimeout(() => balloon.classList.remove('expanding'), 200);
                 
                 if (balloon.expandLevel >= 2) {
                     popBalloon(balloon);
